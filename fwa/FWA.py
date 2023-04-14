@@ -2,36 +2,52 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import numpy.linalg as la
+import random
+import math
 
 
-
-Up = 50
-Low = -50
-
-def draw_iter(fig, e_sparks, e_fits ):
+Up = 5
+Low = -5
+def draw_iter(fig,idx, all_sparks, all_fits, e_sparks, e_fits):
     x,y = np.mgrid[Low:Up:200j,Low:Up:200j]
     sigma = 2
     z_1 = -1/(2 * np.pi * (sigma**2)) * np.exp(-(x**2+y**2)/(2 * sigma**2)) 
-    z_2 = -1/(2 * np.pi * (sigma**2)) * np.exp(-((x+0)**2+(y+0)**2)/(2 * sigma**2)) - 1/(2 * np.pi * (sigma**2)) * np.exp(-((x-5)**2+(y-5)**2)/(2 * sigma**2))
-    
+    z_2 = -1/(2 * np.pi * (sigma**2)) * np.exp(-((x+5)**2+(y+5)**2)/(2 * sigma**2)) - 0.7*1/(2 * np.pi * (sigma**2)) * np.exp(-((x-5)**2+(y-5)**2)/(2 * sigma**2))
+    z_3 = -20*np.exp(-0.2*np.sqrt(0.5*x*x+0.5*y*y))- np.exp(0.5*np.cos(2*math.pi*x) + 0.5*np.cos(2*math.pi*y)) + 20 + math.e
     ax = Axes3D(fig)
-    ax.plot_surface(x, y, z_2, rstride=1, cstride=1, cmap='rainbow',alpha = 0.9)
+    print("min value: ", (e_fits[0]))
+    ax.plot_surface(x, y, z_3, rstride=1, cstride=1, cmap='summer',alpha = 0.6)
 
-    e_sparks = np.array(e_sparks)
+    all_sparks = np.array(all_sparks)                         #所有火花
+    all_fits = np.squeeze(np.array(all_fits))
+    #print(all_sparks[:,0].shape, all_sparks[:,1].shape, all_fits.shape)
+    ax.scatter(all_sparks[:,0], all_sparks[:,1], all_fits, c='b', marker='o', s = 25)
+
+    e_sparks = np.array(e_sparks)                            #筛选后的火花
     e_fits = np.squeeze(np.array(e_fits))
-    print(e_sparks[:,0].shape, e_sparks[:,1].shape, e_fits.shape)
-    ax.scatter(e_sparks[:,0], e_sparks[:,1], e_fits, c='r', marker='o')
+    #print(e_sparks[:,0].shape, e_sparks[:,1].shape, e_fits.shape)
+    ax.scatter(e_sparks[:,0], e_sparks[:,1], e_fits, c='r', marker='x', s = 45)
+    
+    ax.view_init(elev=50)
+    plt.savefig("./result/fwa/50_degree/iter_"+str(idx)+".png", bbox_inches='tight', dpi = 300)      #减少空白边框，提高图片分辨率
+    #plt.pause(2.5)
+    
 
-
-    #plt.show()
-    plt.pause(2.5)
+    ax.view_init(elev=0)
+    plt.savefig("./result/fwa/0_degree/iter_"+str(idx)+".png", bbox_inches='tight', dpi = 300)
+    #plt.pause(2.5)
     plt.clf()
 
 
+    with open("./result/fwa/min_value.txt","a") as f:
+        f.write("iter_"+str(idx)+": "+str(e_fits[0])+"\n")
 
 
 
-class BBFWA(object):
+
+
+class FWA(object):
 
     def  __init__(self):
         # Parameters
@@ -74,8 +90,8 @@ class BBFWA(object):
                   max_iter = 10000,
                   max_eval = 20000,
                   # params for method
-                  sp_size = 200,
-                  init_amp = 200,
+                  sp_size = 30,
+                  init_amp = 10,
                   ):
 
         # load params
@@ -106,52 +122,54 @@ class BBFWA(object):
 
         fireworks, fits = self._init_fireworks()
         fig = plt.figure()
+        
         for idx in range(self.max_iter):
             
             if self._terminate():
                 break
 
             fireworks, fits = self.iter(idx, fig, fireworks, fits)
-            print("iter: ",idx, len(fireworks[0]),fireworks, fits, np.sum((np.array(fireworks[0])**2)))
+            #print("iter: ",idx, len(fireworks[0]),fireworks, fits, np.sum((np.array(fireworks[0])**2)))
         
         self.time = time.time() - begin_time
 
-        return self.best_fit
+
+        return self.best_fit, self.trace
 
     def iter(self, idx, fig, fireworks, fits):
         
-        e_sparks, e_fits = self._explode(fireworks, fits)
-        self._explode_v2(fireworks) 
-        n_fireworks, n_fits = self._select(fireworks, fits, e_sparks, e_fits)    
-
-        # update states
-        if n_fits[0] < fits[0]:
-            self._dyn_amp *= 1.2
-        else:
-            self._dyn_amp *= 0.9
+        
+        e_sparks, e_fits = self._explode_v2(fireworks) 
+        n_fireworks, n_fits = self._select(e_sparks, e_fits)    #select the best sp_size
+        print("\niter", idx)
+        #print("fits",n_fireworks.shape , n_fits.shape)
+     
 
         self._num_iter += 1
         self._num_eval += len(e_sparks)
             
         self.best_idv = n_fireworks[0]
         self.best_fit = n_fits[0]
-        self.trace.append([n_fireworks[0], n_fits[0], self._dyn_amp])
+        self.trace.append([n_fits[0]])
 
         fireworks = n_fireworks
         fits = n_fits
         print("e_sparks, e_fits ",np.array(e_sparks).shape, np.array(e_fits).shape, np.array(fits).shape )
-        
+          
         if idx%10 == 0:
-            draw_iter(fig, e_sparks, e_fits)
+            draw_iter(fig,idx, e_sparks, e_fits, n_fireworks, n_fits)
 
+        if idx%15 == 0:
+            self._dyn_amp*=0.95                 #幅值更新，可以改进
 
         return fireworks, fits
+
 
     def _init_fireworks(self):
     
         fireworks = np.random.uniform(self.lower_bound, 
                                       self.upper_bound, 
-                                      [1, self.dim])
+                                      [self.sp_size, self.dim])
         fireworks = fireworks.tolist()
         fits = self.evaluator(fireworks)
 
@@ -164,42 +182,101 @@ class BBFWA(object):
             return True
         return False
 
-    def _explode(self, fireworks, fits):
-        
-        bias = np.random.uniform(-self._dyn_amp, self._dyn_amp, [self.sp_size, self.dim])
-        rand_samples = np.random.uniform(self.lower_bound, self.upper_bound, [self.sp_size, self.dim])
-        e_sparks = fireworks + bias
-
-        in_bound = (e_sparks > self.lower_bound) * (e_sparks < self.upper_bound)     #(sp_size, dim) Ture/False
-        e_sparks = in_bound * e_sparks + (1 - in_bound) * rand_samples
-        e_sparks = e_sparks.tolist()
-        e_fits = self.evaluator(e_sparks)
-        
-        return e_sparks, e_fits    
+   
 
     def _explode_v2(self, fireworks):
 
-        delta = 1e-3
-        
-        e_fits = np.array(self.evaluator(fireworks))   #200
-        e_sparks = np.array(fireworks)        #200,2
+        delta = 1e-5
+        normal_num =  20
+        gaussian_num = 10
+        e_fits = np.array(self.evaluator(fireworks))   #sp_size
+        e_sparks = np.array(fireworks)        #sp_size,2
         #calculate amp
         amp = np.zeros(self.sp_size)
         sum = np.sum(e_fits - np.min(e_fits))
         amp = self._dyn_amp*(e_fits - np.min(e_fits)+delta)/(sum + delta)
-        print("amp", amp, e_sparks.shape)
+          
+        index = np.argsort(e_fits)
+        normal_spark = e_sparks[index][0:normal_num,:]
+        normal_amp = amp[index][0:normal_num]
+       
+        
+        gaussian_spark = e_sparks[index][0:gaussian_num,:]
+        gaussian_amp = amp[index][0:gaussian_num]
+       
+        new_sparks = []
+
+        
+        for i in range(normal_num):
+            for j in range(10):
+                choice = np.array([np.random.choice([0,1]), np.random.choice([0,1])])
+                tmp = normal_amp[i]*np.random.uniform(-1,1)*choice + normal_spark[i]
+                tmp[0] = self.bound(tmp[0])
+                tmp[1] = self.bound(tmp[1])
+                new_sparks.append(tmp)
+
+        for i in range(gaussian_num):
+            for j in range(5):
+                tmp = gaussian_amp[i]*np.random.normal(loc = 10,scale = 5) + gaussian_spark[i]
+                tmp[0] = self.bound(tmp[0])
+                tmp[1] = self.bound(tmp[1])
+                new_sparks.append(tmp)
+
+        e_sparks = np.array(new_sparks)
+        e_fits = np.array(self.evaluator(e_sparks))
+
+        return e_sparks, e_fits
+
+    def bound(self, x):
+        if x > Up:
+            x = Up
+        if x < Low:
+            x = Low
+        return x
+
+    def distance(self, x, y):
+        (rowx, colx) = x.shape
+        (rowy, coly) = y.shape
+        dis = np.zeros((rowx, rowy))
+        for i in range(0, rowx):
+            for j in range(0, rowy):
+                dis[i, j] = la.norm(x[i] - y[j])**2
+        return dis
 
 
+    def _select(self, fireworks, fits):
+
+        idx = np.argsort(fits)
+        fireworks = fireworks[idx]
+        fits = fits[idx]
 
 
+        dis = self.distance(fireworks, fireworks)
+        
+        r = np.sum(dis, axis=0)
+        p = r/np.sum(r)              #每个点被选择的概率
+        index = self.roulette_selection(p, self.sp_size-1)
+        index = [0] + index
+        select_sp = fireworks[index]
+        select_sp = np.array(select_sp)
+
+        select_fits = fits[index]
+        select_fits = np.array(select_fits)
+        
+        #print("select", fireworks.shape,fits.shape, dis.shape, select_sp.shape, select_fits.shape, index)
+        return select_sp,select_fits
 
 
-    def _select(self, fireworks, fits, e_sparks, e_fits):
-        idvs = fireworks + e_sparks
-        print("111",np.array(fireworks).shape, np.array(e_sparks).shape)
-        fits = fits + e_fits
-        idx = np.argmin(fits)
-        return [idvs[idx]], [fits[idx]]
+    #轮盘赌算法
+    def roulette_selection(self, prob_list, num_select):
+        selected = []
+        for i in range(num_select): 
+            r = random.random()
+            for j, p in enumerate(prob_list):
+                r -= p
+                if r <= 0:                  #索引可重复
+                    selected.append(j)
+                    break
+        return selected    #返回选择元素的索引
 
-
-
+    
