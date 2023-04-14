@@ -1,5 +1,46 @@
 import time
 import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import math
+
+
+Up = 5
+Low = -5
+
+def draw_iter(fig,idx, e_sparks, e_fits ):
+    x,y = np.mgrid[Low:Up:200j,Low:Up:200j]
+    sigma = 2
+    z_1 = -1/(2 * np.pi * (sigma**2)) * np.exp(-(x**2+y**2)/(2 * sigma**2)) 
+    z_2 = -1/(2 * np.pi * (sigma**2)) * np.exp(-((x+0)**2+(y+0)**2)/(2 * sigma**2)) - 1/(2 * np.pi * (sigma**2)) * np.exp(-((x-5)**2+(y-5)**2)/(2 * sigma**2))
+    z_3 = -20*np.exp(-0.2*np.sqrt(0.5*x*x+0.5*y*y))- np.exp(0.5*np.cos(2*math.pi*x) + 0.5*np.cos(2*math.pi*y)) + 20 + math.e
+    ax = Axes3D(fig)
+    ax.plot_surface(x, y, z_3, rstride=1, cstride=1, cmap='summer',alpha = 0.6)
+
+    e_sparks = np.array(e_sparks)
+    e_fits = np.squeeze(np.array(e_fits))
+    #print(e_sparks[:,0].shape, e_sparks[:,1].shape, e_fits.shape)
+    ax.scatter(e_sparks[:,0], e_sparks[:,1], e_fits, c='r', marker='o')
+    
+   
+
+    ax.view_init(elev=50)
+    plt.savefig("./result/bbfwa/50_degree/iter_"+str(idx)+".png", bbox_inches='tight', dpi = 300)
+    plt.pause(2.5)
+    
+
+    ax.view_init(elev=0)
+    plt.savefig("./result/bbfwa/0_degree/iter_"+str(idx)+".png", bbox_inches='tight', dpi = 300)
+    plt.pause(2.5)
+    plt.clf()
+
+
+    with open("./result/bbfwa/min_value.txt","a") as f:
+        f.write("iter_"+str(idx)+": "+str(np.min(e_fits))+"\n")
+
+
+
+
 
 class BBFWA(object):
 
@@ -39,12 +80,12 @@ class BBFWA(object):
                   # params for prob
                   evaluator = None,
                   dim = 2,
-                  upper_bound = 100,
-                  lower_bound = -100,
+                  upper_bound = Up,
+                  lower_bound = Low,
                   max_iter = 10000,
                   max_eval = 20000,
                   # params for method
-                  sp_size = 200,
+                  sp_size = 250,
                   init_amp = 200,
                   ):
 
@@ -62,6 +103,7 @@ class BBFWA(object):
         
         # init states
         self._num_iter = 0
+        
         self._num_eval = 0
         self._dyn_amp = init_amp
         self.best_idv = None
@@ -74,21 +116,23 @@ class BBFWA(object):
         begin_time = time.time()
 
         fireworks, fits = self._init_fireworks()
+        fig = plt.figure()
         for idx in range(self.max_iter):
             
             if self._terminate():
                 break
 
-            fireworks, fits = self.iter(fireworks, fits)
+            fireworks, fits = self.iter(idx, fig, fireworks, fits)
+            print("iter: ",idx, len(fireworks[0]),fireworks, fits)
         
         self.time = time.time() - begin_time
 
-        return self.best_fit
+        return self.best_fit, self.trace
 
-    def iter(self, fireworks, fits):
+    def iter(self, idx, fig, fireworks, fits):
         
-        e_sparks, e_fits = self._explode(fireworks, fits)
-         
+        e_sparks, e_fits = self._explode(fireworks)
+        
         n_fireworks, n_fits = self._select(fireworks, fits, e_sparks, e_fits)    
 
         # update states
@@ -102,11 +146,16 @@ class BBFWA(object):
             
         self.best_idv = n_fireworks[0]
         self.best_fit = n_fits[0]
-        self.trace.append([n_fireworks[0], n_fits[0], self._dyn_amp])
+        self.trace.append([n_fits[0]])
 
         fireworks = n_fireworks
         fits = n_fits
         
+        
+        #if idx%10 == 0:          #绘图
+        #    draw_iter(fig,idx, fireworks + e_sparks, fits + e_fits)
+
+
         return fireworks, fits
 
     def _init_fireworks(self):
@@ -126,19 +175,26 @@ class BBFWA(object):
             return True
         return False
 
-    def _explode(self, fireworks, fits):
+    def _explode(self, fireworks):
         
         bias = np.random.uniform(-self._dyn_amp, self._dyn_amp, [self.sp_size, self.dim])
         rand_samples = np.random.uniform(self.lower_bound, self.upper_bound, [self.sp_size, self.dim])
         e_sparks = fireworks + bias
-        in_bound = (e_sparks > self.lower_bound) * (e_sparks < self.upper_bound)
+
+        in_bound = (e_sparks > self.lower_bound) * (e_sparks < self.upper_bound)     #(sp_size, dim) Ture/False
         e_sparks = in_bound * e_sparks + (1 - in_bound) * rand_samples
         e_sparks = e_sparks.tolist()
         e_fits = self.evaluator(e_sparks)
+        
         return e_sparks, e_fits    
 
+
+
     def _select(self, fireworks, fits, e_sparks, e_fits):
-        idvs = fireworks + e_sparks
-        fits = fits + e_fits
+        idvs = fireworks + e_sparks           
+        fits = fits + e_fits                 #最优点与产生的烟花合并
         idx = np.argmin(fits)
         return [idvs[idx]], [fits[idx]]
+
+
+
