@@ -8,7 +8,7 @@ import os
 
 
 
-def draw_iter(fig,idx, e_sparks, e_fits ):
+def draw_iter(fig,idx, e_sparks, e_fits, Low, Up ):
     x,y = np.mgrid[Low:Up:200j,Low:Up:200j]
     sigma = 2
     z_1 = -1/(2 * np.pi * (sigma**2)) * np.exp(-(x**2+y**2)/(2 * sigma**2)) 
@@ -55,8 +55,8 @@ class BBFWA(object):
         # params of problem
         self.evaluator = None
         self.dim = None
-        self.upper_bound = 1
-        self.lower_bound = -1
+        self.upper_bound = None
+        self.lower_bound = None
 
         self.max_iter = None
         self.max_eval = None
@@ -81,8 +81,8 @@ class BBFWA(object):
                   # params for prob
                   evaluator = None,
                   dim = 2,
-                  upper_bound = Up,
-                  lower_bound = Low,
+                  upper_bound = -1,
+                  lower_bound = 1,
                   max_iter = 10000,
                   max_eval = 20000,
                   # params for method
@@ -153,8 +153,8 @@ class BBFWA(object):
         fits = n_fits
         
         
-        #if idx%10 == 0:          #绘图
-        #    draw_iter(fig,idx, fireworks + e_sparks, fits + e_fits)
+        if idx%10 == 0:          #绘图
+            draw_iter(fig,idx, fireworks + e_sparks, fits + e_fits, -5, 5)
 
 
         return fireworks, fits
