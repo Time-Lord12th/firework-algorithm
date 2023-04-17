@@ -21,7 +21,7 @@ def compare_fwa_bbfwa():
 		upper_bound = 5,
                 lower_bound = -5,
 		)
-	result, trace_1 = algo.run()
+	_, result, trace_1 = algo.run()
 	
 	algo = FWA()
 	algo.load_prob(evaluator=func_4,
