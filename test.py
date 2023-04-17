@@ -21,8 +21,6 @@ def compare_fwa_bbfwa():
 		)
 	result, trace_1 = algo.run()
 	
-
-
 	algo = FWA()
 	algo.load_prob(evaluator=func_4,
 		dim=2,
@@ -37,7 +35,7 @@ def compare_fwa_bbfwa():
 	plt.xlabel('iter')  
 	plt.ylabel('min value')  
 	plt.legend()
-	plt.savefig("./result/comparison.png")
+	plt.savefig("./results/comparison.png")
 	plt.show()
 
 
@@ -57,7 +55,7 @@ def calculate_functions():
 
 if __name__ == "__main__":
 	
-	#compare_fwa_bbfwa()
+	compare_fwa_bbfwa()
 
 	calculate_functions()
 

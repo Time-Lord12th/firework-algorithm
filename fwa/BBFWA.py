@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import math
+import os
 
 
 Up = 5
@@ -22,20 +23,21 @@ def draw_iter(fig,idx, e_sparks, e_fits ):
     #print(e_sparks[:,0].shape, e_sparks[:,1].shape, e_fits.shape)
     ax.scatter(e_sparks[:,0], e_sparks[:,1], e_fits, c='r', marker='o')
     
-   
+    os.makedirs("./results/bbfwa/50_degree/", exist_ok=True)
+    os.makedirs("./results/bbfwa/0_degree/", exist_ok=True)
 
     ax.view_init(elev=50)
-    plt.savefig("./result/bbfwa/50_degree/iter_"+str(idx)+".png", bbox_inches='tight', dpi = 300)
+    plt.savefig("./results/bbfwa/50_degree/iter_"+str(idx)+".png", bbox_inches='tight', dpi = 300)
     plt.pause(2.5)
     
 
     ax.view_init(elev=0)
-    plt.savefig("./result/bbfwa/0_degree/iter_"+str(idx)+".png", bbox_inches='tight', dpi = 300)
+    plt.savefig("./results/bbfwa/0_degree/iter_"+str(idx)+".png", bbox_inches='tight', dpi = 300)
     plt.pause(2.5)
     plt.clf()
 
 
-    with open("./result/bbfwa/min_value.txt","a") as f:
+    with open("./results/bbfwa/min_value.txt","a") as f:
         f.write("iter_"+str(idx)+": "+str(np.min(e_fits))+"\n")
 
 
