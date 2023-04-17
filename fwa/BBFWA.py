@@ -56,8 +56,8 @@ class BBFWA(object):
         # params of problem
         self.evaluator = None
         self.dim = None
-        self.upper_bound = None
-        self.lower_bound = None
+        self.upper_bound = 1
+        self.lower_bound = -1
 
         self.max_iter = None
         self.max_eval = None
@@ -129,7 +129,7 @@ class BBFWA(object):
         
         self.time = time.time() - begin_time
 
-        return self.best_fit, self.trace
+        return self.best_idv, self.best_fit, self.trace
 
     def iter(self, idx, fig, fireworks, fits):
         
@@ -148,7 +148,7 @@ class BBFWA(object):
             
         self.best_idv = n_fireworks[0]
         self.best_fit = n_fits[0]
-        self.trace.append([n_fits[0]])
+        self.trace.append(n_fits[0])
 
         fireworks = n_fireworks
         fits = n_fits
@@ -165,10 +165,10 @@ class BBFWA(object):
         fireworks = np.random.uniform(self.lower_bound, 
                                       self.upper_bound, 
                                       [1, self.dim])
-        fireworks = fireworks.tolist()
+        #fireworks = fireworks.tolist()
         fits = self.evaluator(fireworks)
 
-        return fireworks, fits
+        return fireworks.tolist(), fits.tolist()
 
     def _terminate(self):
         if self._num_iter >= self.max_iter:
@@ -185,10 +185,10 @@ class BBFWA(object):
 
         in_bound = (e_sparks > self.lower_bound) * (e_sparks < self.upper_bound)     #(sp_size, dim) Ture/False
         e_sparks = in_bound * e_sparks + (1 - in_bound) * rand_samples
-        e_sparks = e_sparks.tolist()
+        #e_sparks = e_sparks.tolist()
         e_fits = self.evaluator(e_sparks)
         
-        return e_sparks, e_fits    
+        return e_sparks.tolist(), e_fits.tolist()
 
 
 
