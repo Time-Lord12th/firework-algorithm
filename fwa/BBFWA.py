@@ -6,8 +6,7 @@ import math
 import os
 
 
-Up = 5
-Low = -5
+
 
 def draw_iter(fig,idx, e_sparks, e_fits ):
     x,y = np.mgrid[Low:Up:200j,Low:Up:200j]
