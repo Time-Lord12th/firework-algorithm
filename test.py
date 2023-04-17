@@ -18,6 +18,8 @@ def compare_fwa_bbfwa():
 	algo.load_prob(evaluator=func_4,
 		dim=2,
 		max_eval=10*10000,
+		upper_bound = 5,
+                lower_bound = -5,
 		)
 	result, trace_1 = algo.run()
 	
