@@ -4,7 +4,12 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-
+def func_ackley(x): 
+    bs = x.shape[0]
+    result = np.zeros(bs)
+    for i in range(len(x)):
+        result[i] = 20 + np.e -20 * np.exp(-0.2 * np.sqrt(1/2 * np.sum(x[i]**2))) - np.exp(1/2 * np.sum(np.cos(2*np.pi*x[i]**2)))
+    return result
 
 def compare_fwa_bbfwa():
 	func_1 = lambda x: [sum([_ * _ for _ in xi]) for xi in x]
@@ -15,7 +20,7 @@ def compare_fwa_bbfwa():
 	func_4 = lambda x: [-20*np.exp(-0.2*np.sqrt(0.5*xi[0]*xi[0]+0.5*xi[1]*xi[1])) - np.exp(0.5*np.cos(2*math.pi*xi[0]) + 0.5*np.cos(2*math.pi*xi[1])) + 20 + math.e for xi in x]
 
 	algo = BBFWA()
-	algo.load_prob(evaluator=func_4,
+	algo.load_prob(evaluator=func_ackley,
 		dim=2,
 		max_eval=10*10000,
 		upper_bound = 5,
