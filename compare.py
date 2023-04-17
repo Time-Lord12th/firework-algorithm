@@ -1,4 +1,4 @@
-from comparisons.BBFWA import BBFWA
+from fwa.BBFWA import BBFWA
 import pyswarms as ps
 import numpy as np
 import math
