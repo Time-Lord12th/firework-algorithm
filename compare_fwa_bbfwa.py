@@ -49,23 +49,11 @@ def compare_fwa_bbfwa():
 
 
 
-def calculate_functions():
-	func_1 = lambda x: [sum([_ * _ for _ in xi]) for xi in x]
-	algo = BBFWA()
-	algo.load_prob(evaluator=func_1,
-		dim=2,
-		max_eval=10*10000,
-		)
-	result, trace_1 = algo.run()
-	print("min value: ", result)
-
-
 if __name__ == "__main__":
 	
 	compare_fwa_bbfwa()
 
-	calculate_functions()
-
+	
 
 
 
