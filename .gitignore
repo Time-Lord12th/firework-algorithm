@@ -3,3 +3,4 @@ __pycache__/*
 *.pyc
 results/
 report.log
+test.py

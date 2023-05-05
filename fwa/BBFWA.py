@@ -5,9 +5,6 @@ from mpl_toolkits.mplot3d import Axes3D
 import math
 import os
 
-
-
-
 def draw_iter(fig,idx, e_sparks, e_fits, Low, Up ):
     x,y = np.mgrid[Low:Up:200j,Low:Up:200j]
     sigma = 2
@@ -27,19 +24,18 @@ def draw_iter(fig,idx, e_sparks, e_fits, Low, Up ):
 
     ax.view_init(elev=50)
     plt.savefig("./results/bbfwa/50_degree/iter_"+str(idx)+".png", bbox_inches='tight', dpi = 300)
-    plt.pause(2.5)
+    # plt.pause(2.5)
     
 
     ax.view_init(elev=0)
     plt.savefig("./results/bbfwa/0_degree/iter_"+str(idx)+".png", bbox_inches='tight', dpi = 300)
-    plt.pause(2.5)
+    # plt.pause(2.5)
     plt.clf()
 
 
     with open("./results/bbfwa/min_value.txt","a") as f:
         f.write("iter_"+str(idx)+": "+str(np.min(e_fits))+"\n")
-
-
+    print("iter_"+str(idx)+": "+str(np.min(e_fits)))
 
 
 
@@ -153,8 +149,8 @@ class BBFWA(object):
         fits = n_fits
         
         
-        if idx%10 == 0:          #绘图
-            draw_iter(fig,idx, fireworks + e_sparks, fits + e_fits, -5, 5)
+        # if idx%10 == 0:          #绘图
+        #     draw_iter(fig,idx, fireworks + e_sparks, fits + e_fits, -5, 5)
 
 
         return fireworks, fits
@@ -189,13 +185,8 @@ class BBFWA(object):
         
         return e_sparks.tolist(), e_fits.tolist()
 
-
-
     def _select(self, fireworks, fits, e_sparks, e_fits):
         idvs = fireworks + e_sparks           
         fits = fits + e_fits                 #最优点与产生的烟花合并
         idx = np.argmin(fits)
         return [idvs[idx]], [fits[idx]]
-
-
-

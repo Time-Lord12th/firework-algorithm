@@ -17,7 +17,6 @@ def draw_iter(fig,idx, all_sparks, all_fits, e_sparks, e_fits):
     z_2 = -1/(2 * np.pi * (sigma**2)) * np.exp(-((x+5)**2+(y+5)**2)/(2 * sigma**2)) - 0.7*1/(2 * np.pi * (sigma**2)) * np.exp(-((x-5)**2+(y-5)**2)/(2 * sigma**2))
     z_3 = -20*np.exp(-0.2*np.sqrt(0.5*x*x+0.5*y*y))- np.exp(0.5*np.cos(2*math.pi*x) + 0.5*np.cos(2*math.pi*y)) + 20 + math.e
     ax = Axes3D(fig)
-    print("min value: ", (e_fits[0]))
     ax.plot_surface(x, y, z_3, rstride=1, cstride=1, cmap='summer',alpha = 0.6)
 
     all_sparks = np.array(all_sparks)                         #所有火花
@@ -46,8 +45,7 @@ def draw_iter(fig,idx, all_sparks, all_fits, e_sparks, e_fits):
 
     with open("./results/fwa/min_value.txt","a") as f:
         f.write("iter_"+str(idx)+": "+str(e_fits[0])+"\n")
-
-
+    print("iter_"+str(idx)+": "+str(e_fits[0]))
 
 
 
@@ -96,6 +94,10 @@ class FWA(object):
                   # params for method
                   sp_size = 30,
                   init_amp = 10,
+                  # num
+                  delta = 1e-5,
+                  normal_num = 20,
+                  gaussian_num = 10
                   ):
 
         # load params
@@ -121,7 +123,12 @@ class FWA(object):
 
         self.time = 0
 
-    def run(self):
+        self.delta = delta
+        self.normal_num =  normal_num
+        self.gaussian_num = gaussian_num
+
+
+    def run(self, *args, **kwargs):
         begin_time = time.time()
 
         fireworks, fits = self._init_fireworks()
@@ -142,13 +149,10 @@ class FWA(object):
 
     def iter(self, idx, fig, fireworks, fits):
         
-        
         e_sparks, e_fits = self._explode_v2(fireworks) 
         n_fireworks, n_fits = self._select(e_sparks, e_fits)    #select the best sp_size
-        print("\niter", idx)
         #print("fits",n_fireworks.shape , n_fits.shape)
      
-
         self._num_iter += 1
         self._num_eval += len(e_sparks)
             
@@ -158,10 +162,10 @@ class FWA(object):
 
         fireworks = n_fireworks
         fits = n_fits
-        print("e_sparks, e_fits ",np.array(e_sparks).shape, np.array(e_fits).shape, np.array(fits).shape )
+        print("iter", idx, "e_sparks, e_fits ",np.array(e_sparks).shape, np.array(e_fits).shape, np.array(fits).shape )
           
-        if idx%10 == 0:
-            draw_iter(fig,idx, e_sparks, e_fits, n_fireworks, n_fits)
+        # if idx%10 == 0:
+        #     draw_iter(fig,idx, e_sparks, e_fits, n_fireworks, n_fits)
 
         if idx%15 == 0:
             self._dyn_amp*=0.95                 #幅值更新，可以改进
@@ -186,13 +190,12 @@ class FWA(object):
             return True
         return False
 
-   
-
     def _explode_v2(self, fireworks):
 
-        delta = 1e-5
-        normal_num =  20
-        gaussian_num = 10
+        delta = self.delta
+        normal_num =  self.normal_num
+        gaussian_num = self.gaussian_num
+
         e_fits = np.array(self.evaluator(fireworks))   #sp_size
         e_sparks = np.array(fireworks)        #sp_size,2
         #calculate amp
@@ -210,7 +213,6 @@ class FWA(object):
        
         new_sparks = []
 
-        
         for i in range(normal_num):
             for j in range(10):
                 choice = np.array([np.random.choice([0,1]), np.random.choice([0,1])])
@@ -247,13 +249,11 @@ class FWA(object):
                 dis[i, j] = la.norm(x[i] - y[j])**2
         return dis
 
-
     def _select(self, fireworks, fits):
 
         idx = np.argsort(fits)
         fireworks = fireworks[idx]
         fits = fits[idx]
-
 
         dis = self.distance(fireworks, fireworks)
         

@@ -6,10 +6,6 @@ import matplotlib.pyplot as plt
 import argparse
 import os
 import geatpy as ea
-### define dimension, lower bound, upper bound as glocal variant
-d = 2
-lb = np.array([-1, -1])
-ub = np.array([1,1])
 
 save_dir = './results'
 os.makedirs(save_dir, exist_ok=True)
@@ -100,11 +96,11 @@ def evaluate_on_bbfwa(iters, func_to_eval):
 		max_eval = 1e+10,
 		)
     optimal_point, optimal_value, trajectory = algo.run()
-    plt.figure()
-    plt.plot(trajectory, "k:")
-    plt.savefig(save_dir+'/bbfwa.png')
-    print('save optimization curves to ----' + save_dir+'/bbfwa.png')
-    return optimal_point, optimal_value    
+    # plt.figure()
+    # plt.plot(trajectory, "k:")
+    # plt.savefig(save_dir+'/bbfwa.png')
+    # print('save optimization curves to ----' + save_dir+'/bbfwa.png')
+    return optimal_point, optimal_value, trajectory 
 
 def evaluate_on_pso(iters, func_to_eval):
     x_max = ub * np.ones(d)
@@ -113,10 +109,10 @@ def evaluate_on_pso(iters, func_to_eval):
     options = {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
     optimizer = ps.single.GlobalBestPSO(n_particles=20, dimensions=d, options=options, bounds=bounds)
     optimal_value, optimal_point = optimizer.optimize(func_to_eval, iters=iters)
-    plt.figure()
-    plt.plot(optimizer.cost_history, "k:")
-    plt.savefig(save_dir+'/pso.png')
-    return optimal_point.tolist(), optimal_value.tolist()
+    # plt.figure()
+    # plt.plot(optimizer.cost_history, "k:")
+    # plt.savefig(save_dir+'/pso.png')
+    return optimal_point.tolist(), optimal_value.tolist(), optimizer.cost_history
 
 def evaluate_on_genetic(iters, func_to_eval):
     problem = ea.Problem(name='soea quick start demo',
@@ -137,12 +133,40 @@ def evaluate_on_genetic(iters, func_to_eval):
 # 求解
     res = ea.optimize(algorithm, seed=1, verbose=True, drawing=0, outputMsg=False, drawLog=False, saveFlag=False, dirName='result')
     trace = np.array(algorithm.log['f_opt'])
-    plt.figure()
-    plt.plot(trace, "k:")
-    plt.savefig(save_dir+'/gene.png')
-    print('save optimization curves to ----' + save_dir+'/gene.png')
-    return res['Vars'][0].tolist(),res['ObjV'][0][0]
+    # plt.figure()
+    # plt.plot(trace, "k:")
+    # plt.savefig(save_dir+'/gene.png')
+    # print('save optimization curves to ----' + save_dir+'/gene.png')
+    return res['Vars'][0].tolist(),res['ObjV'][0][0], trace
     
+
+def evaluate_all(iters, func_to_eval):
+    point_fwa, value_fwa, trace_fwa = evaluate_on_bbfwa(iters, func_to_eval)
+    point_pso, value_pso, trace_pso = evaluate_on_pso(iters, func_to_eval)
+    point_gen, value_gen, trace_gen = evaluate_on_genetic(iters, func_warpper(func_to_eval))
+
+    print('Optimal point for Firework algotithm:'+str(point_fwa))
+    print('Optimal point for Particle Swarm Optimization:'+str(point_pso))
+    print('Optimal point for Genetic algorithm:'+str(point_gen))
+    print('Optimal value for Firework algotithm:'+str(value_fwa))
+    print('Optimal value for Particle Swarm Optimization:'+str(value_pso))
+    print('Optimal value for Genetic algorithm:'+str(value_gen))
+    print('-----')
+
+    start = 400
+    print(len(trace_fwa), len(trace_fwa[start:]))
+
+    plt.figure()
+    plt.plot(trace_fwa[start:], c='r', label='FWA')  
+    plt.plot(trace_pso[start:], c='g', label='PSO')  
+    plt.plot(trace_gen[start:], c='b', label='Gene')  
+    plt.xlabel('iter')  
+    plt.ylabel('min value')  
+    plt.legend()
+    plt.savefig("./results/comparison_others.png")
+    # plt.show()
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -157,15 +181,5 @@ if __name__ == "__main__":
     ub = args.upper_bound
     func_to_eval = func[args.eval_func_idex]
     iters = args.iteration
-    point_fwa, value_fwa = evaluate_on_bbfwa(iters, func_to_eval)
-    point_pso, value_pso = evaluate_on_pso(iters, func_to_eval)
-    point_gen, value_gen = evaluate_on_genetic(iters, func_warpper(func_to_eval))
-    print('Optimal point for Firework algotithm:'+str(point_fwa))
-    print('Optimal point for Particle Swarm Optimization:'+str(point_pso))
-    print('Optimal point for Genetic algorithm:'+str(point_gen))
-    print('Optimal value for Firework algotithm:'+str(value_fwa))
-    print('Optimal value for Particle Swarm Optimization:'+str(value_pso))
-    print('Optimal value for Genetic algorithm:'+str(value_gen))
-    print('-----')
-    
 
+    evaluate_all(iters, func_to_eval)
