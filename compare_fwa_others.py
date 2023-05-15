@@ -140,7 +140,7 @@ def evaluate_on_genetic(iters, func_to_eval):
     return res['Vars'][0].tolist(),res['ObjV'][0][0], trace
     
 
-def evaluate_all(iters, func_to_eval):
+def evaluate_all(iters, func_to_eval, eval_func_idex):
     point_fwa, value_fwa, trace_fwa = evaluate_on_bbfwa(iters, func_to_eval)
     point_pso, value_pso, trace_pso = evaluate_on_pso(iters, func_to_eval)
     point_gen, value_gen, trace_gen = evaluate_on_genetic(iters, func_warpper(func_to_eval))
@@ -153,33 +153,42 @@ def evaluate_all(iters, func_to_eval):
     print('Optimal value for Genetic algorithm:'+str(value_gen))
     print('-----')
 
-    start = 400
-    print(len(trace_fwa), len(trace_fwa[start:]))
+    idx = np.arange(len(trace_fwa))
+    os.makedirs(f"./results/comparison_others_{eval_func_idex}", exist_ok=True)
 
-    plt.figure()
-    plt.plot(trace_fwa[start:], c='r', label='FWA')  
-    plt.plot(trace_pso[start:], c='g', label='PSO')  
-    plt.plot(trace_gen[start:], c='b', label='Gene')  
-    plt.xlabel('iter')  
-    plt.ylabel('min value')  
-    plt.legend()
-    plt.savefig("./results/comparison_others.png")
-    # plt.show()
+    with open(f"./results/comparison_others_{eval_func_idex}/res.txt", "w") as f:
+        content = f"FWA:{value_fwa}\n"
+        content += f"PSO:{value_pso}\n"
+        content += f"Gene:{value_gen}\n"
+        f.write(content)
+
+    for s in range(5):
+        start = 100 * s
+        plt.figure()
+        plt.plot(idx[start:], trace_fwa[start:], c='r', label='FWA')  
+        plt.plot(idx[start:], trace_pso[start:], c='g', label='PSO')  
+        plt.plot(idx[start:], trace_gen[start:], c='b', label='Gene')  
+        plt.xlabel('iter')  
+        plt.ylabel('min value')  
+        plt.legend()
+        plt.savefig(f"./results/comparison_others_{eval_func_idex}/{start}.png")
+        plt.clf()
 
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dimension', default=15, type=int, help='dimension for vector x')
-    parser.add_argument('--lower_bound', default=-8, type=int, help='lower bound for x')
-    parser.add_argument('--upper_bound', default=8, type=int, help='upper bound for x')
-    parser.add_argument('--eval_func_idex', type=int, default=0, help='index for evaluation funcs')
+    parser.add_argument('--dimension', default=30, type=int, help='dimension for vector x')
+    parser.add_argument('--lower_bound', default=-100, type=int, help='lower bound for x')
+    parser.add_argument('--upper_bound', default=100, type=int, help='upper bound for x')
+    # parser.add_argument('--eval_func_idex', type=int, default=0, help='index for evaluation funcs')
     parser.add_argument('--iteration', type=int, default=1000, help='iterations')
     args = parser.parse_args()
     d = args.dimension
     lb = args.lower_bound
     ub = args.upper_bound
-    func_to_eval = func[args.eval_func_idex]
     iters = args.iteration
 
-    evaluate_all(iters, func_to_eval)
+    for eval_func_idex in range(9):     
+        func_to_eval = func[eval_func_idex]
+        evaluate_all(iters, func_to_eval, eval_func_idex)
